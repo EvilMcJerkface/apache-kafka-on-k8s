@@ -146,7 +146,7 @@ subprojects {
     apply plugin: 'findbugs'
 
   sourceCompatibility = 1.7
-  targetCompatibility = 1.7
+  targetCompatibility = 1.8
 
   compileJava {
     options.encoding = 'UTF-8'
@@ -570,6 +570,7 @@ project(':core') {
     }
 
     compileOnly libs.log4j
+    compile libs.jetcdcore
 
     testCompile project(':clients').sourceSets.test.output
     testCompile libs.bcpkix
