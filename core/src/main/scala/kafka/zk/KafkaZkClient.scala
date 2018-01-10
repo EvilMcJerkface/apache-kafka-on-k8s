@@ -23,6 +23,7 @@ import kafka.api.LeaderAndIsr
 import kafka.cluster.Broker
 import kafka.common.KafkaException
 import kafka.controller.LeaderIsrAndControllerEpoch
+import kafka.etcd.EtcdClient
 import kafka.log.LogConfig
 import kafka.metrics.KafkaMetricsGroup
 import kafka.metastore.KafkaMetastore
@@ -1410,7 +1411,7 @@ class KafkaZkClient(kafkaMetastore: List[_<: KafkaMetastore], isSecure: Boolean,
     }
 
     def createRecursive0(path: String): Unit = {
-      val createRequest = CreateRequest(path, null, acls(path), CreateMode.PERSISTENT)
+      val createRequest = CreateRequest(path, "[null]".getBytes(), acls(path), CreateMode.PERSISTENT)
       var createResponse = retryRequestUntilConnected(createRequest)
       if (createResponse.resultCode == Code.NONODE) {
         createRecursive0(parentPath(path))
@@ -1441,7 +1442,7 @@ class KafkaZkClient(kafkaMetastore: List[_<: KafkaMetastore], isSecure: Boolean,
   private def createTopicPartition(partitions: Seq[TopicPartition]): Seq[CreateResponse] = {
     val createRequests = partitions.map { partition =>
       val path = TopicPartitionZNode.path(partition)
-      CreateRequest(path, null, acls(path), CreateMode.PERSISTENT, Some(partition))
+      CreateRequest(path, "[null]".getBytes, acls(path), CreateMode.PERSISTENT, Some(partition))
     }
     retryRequestsUntilConnected(createRequests)
   }
@@ -1449,7 +1450,7 @@ class KafkaZkClient(kafkaMetastore: List[_<: KafkaMetastore], isSecure: Boolean,
   private def createTopicPartitions(topics: Seq[String]): Seq[CreateResponse] = {
     val createRequests = topics.map { topic =>
       val path = TopicPartitionsZNode.path(topic)
-      CreateRequest(path, null, acls(path), CreateMode.PERSISTENT, Some(topic))
+      CreateRequest(path, "[null]".getBytes, acls(path), CreateMode.PERSISTENT, Some(topic))
     }
     retryRequestsUntilConnected(createRequests)
   }
@@ -1566,8 +1567,9 @@ object KafkaZkClient {
             time: Time,
             metricGroup: String = "kafka.server",
             metricType: String = "SessionExpireListener") = {
-    val zooKeeperClient = new ZooKeeperClient(connectString, sessionTimeoutMs, connectionTimeoutMs, maxInFlightRequests,
-      time, metricGroup, metricType)
-    new KafkaZkClient(zooKeeperClient, isSecure, time)
+//    val zooKeeperClient = new ZooKeeperClient(connectString, sessionTimeoutMs, connectionTimeoutMs, maxInFlightRequests,
+//      time, metricGroup, metricType)
+    val etcdClient = new EtcdClient(time = time)
+    new KafkaZkClient(etcdClient :: Nil, isSecure, time)
   }
 }
